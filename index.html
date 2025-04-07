@@ -1,0 +1,2335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D AI Generation Platform</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.11.5/dist/gsap.min.js"></script>
+    <style>
+        :root {
+            --primary: #8a2be2;
+            --primary-dark: #6a1cb2;
+            --secondary: #ff6b6b;
+            --dark-bg: #121212;
+            --card-bg: #1e1e1e;
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #2d2d2d;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-dark);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+
+        /* Custom animations */
+        .gradient-bg {
+            background: linear-gradient(135deg, #121212 0%, #1a1a1a 100%);
+        }
+
+        .hover-scale {
+            transition: transform 0.3s ease;
+        }
+
+        .hover-scale:hover {
+            transform: scale(1.03);
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .card:hover {
+            box-shadow: 0 8px 30px rgba(138, 43, 226, 0.3);
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            display: inline-block;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(138, 43, 226, 0.4);
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--text-primary);
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: 2px solid var(--primary);
+            outline: none;
+            cursor: pointer;
+            display: inline-block;
+        }
+
+        .btn-secondary:hover {
+            background-color: rgba(138, 43, 226, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .section {
+            padding: 6rem 0;
+            min-height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(circle at 10% 20%, rgba(138, 43, 226, 0.05) 0%, transparent 40%);
+            z-index: 0;
+        }
+
+        .navbar {
+            backdrop-filter: blur(10px);
+            background-color: rgba(18, 18, 18, 0.8);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            position: fixed;
+            width: 100%;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .navbar.scrolled {
+            padding: 0.5rem 0;
+            background-color: rgba(18, 18, 18, 0.95);
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-link:hover {
+            color: var(--text-primary);
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: var(--primary);
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        .active-nav {
+            color: var(--text-primary);
+        }
+
+        .active-nav::after {
+            width: 100%;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(90deg, #ffffff, #b9a0fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-left: 30px;
+            margin-bottom: 2rem;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 6px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: var(--primary);
+        }
+
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 18px;
+            width: 2px;
+            height: calc(100% + 10px);
+            background-color: rgba(138, 43, 226, 0.3);
+        }
+
+        .timeline-item:last-child::after {
+            display: none;
+        }
+
+        .tab-btn {
+            background: transparent;
+            color: var(--text-secondary);
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .custom-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #333;
+            outline: none;
+        }
+
+        .custom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .custom-slider::-webkit-slider-thumb:hover {
+            background: var(--primary-dark);
+            transform: scale(1.2);
+        }
+
+        .dashboard-nav {
+            width: 260px;
+            background-color: var(--card-bg);
+            height: 100%;
+            padding: 2rem 0;
+            border-radius: 12px;
+        }
+
+        .dashboard-link {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+            margin-bottom: 0.5rem;
+        }
+
+        .dashboard-link:hover, .dashboard-link.active {
+            background-color: rgba(138, 43, 226, 0.1);
+            color: var(--text-primary);
+            border-left: 3px solid var(--primary);
+        }
+
+        .dashboard-link i {
+            margin-right: 1rem;
+        }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            width: 200px;
+            background-color: rgba(40, 40, 40, 0.95);
+            color: var(--text-primary);
+            text-align: center;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .custom-checkbox {
+            position: relative;
+            padding-left: 35px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .custom-checkbox input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+
+        .checkmark {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 20px;
+            width: 20px;
+            background-color: #333;
+            border-radius: 4px;
+        }
+
+        .custom-checkbox:hover input ~ .checkmark {
+            background-color: #444;
+        }
+
+        .custom-checkbox input:checked ~ .checkmark {
+            background-color: var(--primary);
+        }
+
+        .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+        }
+
+        .custom-checkbox input:checked ~ .checkmark:after {
+            display: block;
+        }
+
+        .custom-checkbox .checkmark:after {
+            left: 7px;
+            top: 3px;
+            width: 6px;
+            height: 12px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        .style-option {
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .style-option:hover {
+            transform: translateY(-5px);
+        }
+
+        .style-option.selected {
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(138, 43, 226, 0.5);
+        }
+
+        .counter {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .select-wrapper {
+            position: relative;
+        }
+
+        .select-wrapper::after {
+            content: '\f078';
+            font-family: 'Font Awesome 5 Free';
+            font-weight: 900;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: var(--primary);
+        }
+
+        .custom-select {
+            appearance: none;
+            background-color: #2d2d2d;
+            color: var(--text-primary);
+            padding: 0.75rem 2rem 0.75rem 1rem;
+            width: 100%;
+            border: 1px solid #444;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .canvas-container {
+            width: 100%;
+            height: 400px;
+            background-color: #1a1a1a;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(18, 18, 18, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(138, 43, 226, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .progress-bar {
+            width: 80%;
+            height: 6px;
+            background-color: #333;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .camera-controls {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .camera-btn {
+            background-color: #2d2d2d;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .camera-btn:hover {
+            background-color: var(--primary);
+        }
+
+        .glow {
+            box-shadow: 0 0 15px rgba(138, 43, 226, 0.5);
+        }
+
+        .gallery-item {
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+
+        .gallery-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: rgba(18, 18, 18, 0.8);
+            padding: 1rem;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .gallery-item:hover .gallery-overlay {
+            transform: translateY(0);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.8s ease forwards;
+        }
+
+        /* Unique 3D effect for logo */
+        .logo-3d {
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.1),
+                        0 2px 0 rgba(255, 255, 255, 0.05),
+                        0 3px 0 rgba(255, 255, 255, 0.025),
+                        0 0 5px rgba(138, 43, 226, 0.5);
+            transform-style: preserve-3d;
+            transition: all 0.3s ease;
+        }
+
+        .logo-3d:hover {
+            text-shadow: 0 2px 0 rgba(255, 255, 255, 0.2),
+                        0 4px 0 rgba(255, 255, 255, 0.1),
+                        0 6px 0 rgba(255, 255, 255, 0.05),
+                        0 0 10px rgba(138, 43, 226, 0.8);
+            transform: translateY(-2px);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+            
+            .dashboard-nav {
+                width: 100%;
+                height: auto;
+                margin-bottom: 2rem;
+            }
+            
+            .section {
+                padding: 4rem 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar py-4">
+        <div class="container mx-auto px-4 md:px-8">
+            <div class="flex items-center justify-between">
+                <a href="#hero" class="text-2xl font-bold logo-3d text-white">
+                    3D<span class="text-purple-500">Nexus</span>
+                </a>
+                
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#hero" class="nav-link active-nav">Home</a>
+                    <a href="#features" class="nav-link">Features</a>
+                    <a href="#about" class="nav-link">About</a>
+                    <a href="#create" class="nav-link">Create</a>
+                    <a href="#dashboard" class="nav-link">Dashboard</a>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <a href="#create" class="btn-primary">Get Started</a>
+                    <button class="md:hidden text-white focus:outline-none">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu (Hidden by Default) -->
+    <div class="hidden mobile-menu bg-gray-900 fixed top-0 left-0 w-full h-full z-50 flex flex-col items-center justify-center">
+        <button class="absolute top-6 right-6 text-white focus:outline-none">
+            <i class="fas fa-times text-2xl"></i>
+        </button>
+        <div class="flex flex-col items-center space-y-8">
+            <a href="#hero" class="text-white text-xl">Home</a>
+            <a href="#features" class="text-white text-xl">Features</a>
+            <a href="#about" class="text-white text-xl">About</a>
+            <a href="#create" class="text-white text-xl">Create</a>
+            <a href="#dashboard" class="text-white text-xl">Dashboard</a>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section id="hero" class="section flex items-center">
+        <div class="hero-pattern"></div>
+        <div class="container mx-auto px-4 md:px-8 z-10">
+            <div class="flex flex-col md:flex-row items-center">
+                <div class="md:w-1/2 mb-12 md:mb-0 animate-fade-in" style="animation-delay: 0.1s;">
+                    <h1 class="hero-title">Transform Ideas into 3D Masterpieces</h1>
+                    <p class="text-xl text-gray-300 mb-8">
+                        Unleash your creativity with our AI-powered 3D generation technology. Create stunning models from text, images, or sketches in seconds.
+                    </p>
+                    <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                        <a href="#create" class="btn-primary text-center">Start Creating</a>
+                        <a href="#features" class="btn-secondary text-center">Explore Features</a>
+                    </div>
+                </div>
+                <div class="md:w-1/2 animate-fade-in" style="animation-delay: 0.3s;">
+                    <div id="hero-canvas" class="canvas-container glow"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="section bg-[#0d0d0d]">
+        <div class="container mx-auto px-4 md:px-8">
+            <div class="text-center mb-16 animate-fade-in">
+                <h2 class="text-4xl font-bold mb-4">Powerful Features</h2>
+                <p class="text-xl text-gray-300 max-w-3xl mx-auto">
+                    Our platform offers cutting-edge AI technology to transform your ideas into realistic 3D models with incredible detail and accuracy.
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="card p-8 hover-scale animate-fade-in" style="animation-delay: 0.1s;">
+                    <div class="feature-icon">
+                        <i class="fas fa-comment text-2xl text-white"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4">Text-to-3D</h3>
+                    <p class="text-gray-300 mb-6">
+                        Describe what you want in natural language and watch as our AI generates detailed 3D models matching your description.
+                    </p>
+                    <a href="#create" class="text-purple-400 inline-flex items-center">
+                        Try It Now <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+                
+                <!-- Feature 2 -->
+                <div class="card p-8 hover-scale animate-fade-in" style="animation-delay: 0.2s;">
+                    <div class="feature-icon">
+                        <i class="fas fa-image text-2xl text-white"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4">Image-to-3D</h3>
+                    <p class="text-gray-300 mb-6">
+                        Upload any image and our advanced AI will convert it into a detailed 3D model with accurate geometry and textures.
+                    </p>
+                    <a href="#create" class="text-purple-400 inline-flex items-center">
+                        Try It Now <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+                
+                <!-- Feature 3 -->
+                <div class="card p-8 hover-scale animate-fade-in" style="animation-delay: 0.3s;">
+                    <div class="feature-icon">
+                        <i class="fas fa-pencil-alt text-2xl text-white"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4">Sketch-to-3D</h3>
+                    <p class="text-gray-300 mb-6">
+                        Draw a simple sketch and watch as our AI transforms it into a fully realized 3D model while preserving your creative intent.
+                    </p>
+                    <a href="#create" class="text-purple-400 inline-flex items-center">
+                        Try It Now <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Advanced Features -->
+            <div class="mt-24">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                    <div class="animate-fade-in" style="animation-delay: 0.1s;">
+                        <h3 class="text-3xl font-bold mb-6">Advanced Customization</h3>
+                        <p class="text-gray-300 mb-6">
+                            Take full control of your 3D creations with our comprehensive suite of editing tools.
+                        </p>
+                        <ul class="space-y-4">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-purple-500 mt-1 mr-3"></i>
+                                <span>Fine-tune meshes with precision controls for vertices and faces</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-purple-500 mt-1 mr-3"></i>
+                                <span>Apply and customize materials with our extensive library</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-purple-500 mt-1 mr-3"></i>
+                                <span>Add realistic textures with procedural generation</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-purple-500 mt-1 mr-3"></i>
+                                <span>Control lighting and environment settings</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card overflow-hidden animate-fade-in" style="animation-delay: 0.2s;">
+                        <div id="features-canvas" class="canvas-container"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Gallery Section -->
+            <div class="mt-24">
+                <div class="text-center mb-12 animate-fade-in">
+                    <h3 class="text-3xl font-bold mb-4">Stunning Gallery</h3>
+                    <p class="text-xl text-gray-300 max-w-3xl mx-auto">
+                        Explore what others have created with our platform
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Gallery items would typically use image sources, but we're avoiding base64 images -->
+                    <div class="gallery-item h-64 bg-gradient-to-br from-purple-900 to-indigo-800 animate-fade-in" style="animation-delay: 0.1s;">
+                        <div class="gallery-overlay">
+                            <h4 class="text-lg font-bold mb-1">Futuristic City</h4>
+                            <p class="text-sm text-gray-300">Created from text prompt</p>
+                        </div>
+                    </div>
+                    <div class="gallery-item h-64 bg-gradient-to-br from-blue-900 to-purple-800 animate-fade-in" style="animation-delay: 0.2s;">
+                        <div class="gallery-overlay">
+                            <h4 class="text-lg font-bold mb-1">Fantasy Character</h4>
+                            <p class="text-sm text-gray-300">Created from sketch</p>
+                        </div>
+                    </div>
+                    <div class="gallery-item h-64 bg-gradient-to-br from-indigo-900 to-blue-800 animate-fade-in" style="animation-delay: 0.3s;">
+                        <div class="gallery-overlay">
+                            <h4 class="text-lg font-bold mb-1">Modern Architecture</h4>
+                            <p class="text-sm text-gray-300">Created from image</p>
+                        </div>
+                    </div>
+                    <div class="gallery-item h-64 bg-gradient-to-br from-violet-900 to-indigo-800 animate-fade-in" style="animation-delay: 0.4s;">
+                        <div class="gallery-overlay">
+                            <h4 class="text-lg font-bold mb-1">Spaceship Design</h4>
+                            <p class="text-sm text-gray-300">Created from text prompt</p>
+                        </div>
+                    </div>
+                    <div class="gallery-item h-64 bg-gradient-to-br from-purple-800 to-indigo-900 animate-fade-in" style="animation-delay: 0.5s;">
+                        <div class="gallery-overlay">
+                            <h4 class="text-lg font-bold mb-1">Fantasy Landscape</h4>
+                            <p class="text-sm text-gray-300">Created from sketch</p>
+                        </div>
+                    </div>
+                    <div class="gallery-item h-64 bg-gradient-to-br from-indigo-800 to-violet-900 animate-fade-in" style="animation-delay: 0.6s;">
+                        <div class="gallery-overlay">
+                            <h4 class="text-lg font-bold mb-1">Product Design</h4>
+                            <p class="text-sm text-gray-300">Created from image</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pricing Section -->
+            <div class="mt-24">
+                <div class="text-center mb-12 animate-fade-in">
+                    <h3 class="text-3xl font-bold mb-4">Simple Pricing</h3>
+                    <p class="text-xl text-gray-300 max-w-3xl mx-auto">
+                        Choose the plan that works best for your creative needs
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Basic Plan -->
+                    <div class="card p-8 border border-gray-700 hover-scale animate-fade-in" style="animation-delay: 0.1s;">
+                        <h4 class="text-xl font-bold mb-2">Basic</h4>
+                        <div class="text-3xl font-bold mb-6">$9<span class="text-sm font-normal text-gray-400">/month</span></div>
+                        <ul class="space-y-3 mb-8">
+                            <li class="flex items-start">
+                                <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                                <span>10 3D models per month</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                                <span>Standard resolution</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                                <span>Basic editing tools</span>
+                            </li>
+                            <li class="flex items-start text-gray-500">
+                                <i class="fas fa-times text-red-500 mt-1 mr-3"></i>
+                                <span>Advanced customization</span>
+                            </li>
+                            <li class="flex items-start text-gray-500">
+                                <i class="fas fa-times text-red-500 mt-1 mr-3"></i>
+                                <span>Commercial usage</span>
+                            </li>
+                        </ul>
+                        <a href="#" class="btn-secondary w-full text-center">Choose Basic</a>
+                    </div>
+                    
+                    <!-- Pro Plan -->
+                    <div class="card p-8 border-2 border-purple-500 hover-scale transform scale-105 animate-fade-in" style="animation-delay: 0.2s;">
+                        <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-purple-500 text-white text-xs font-bold py-1 px-4 rounded-full">MOST POPULAR</div>
+                        <h4 class="text-xl font-bold mb-2">Pro</h4>
+                        <div class="text-3xl font-bold mb-6">$29<span class="text-sm font-normal text-gray-400">/month</span></div>
+                        <ul class="space-y-3 mb-8">
+                            <li class="flex items-start">
+                                <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                                <span>50 3D models per month</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                                <span>High resolution</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                                <span>Advanced editing tools</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                                <span>Priority rendering</span>
+                            </li>
+                            <li class="flex items-start text-gray-500">
+                                <i class="fas fa-times text-red-500 mt-1 mr-3"></i>
+                                <span>Commercial usage</span>
+                            </li>
+                        </ul>
+                        <a href="#" class="btn-primary w-full text-center">Choose Pro</a>
+                    </div>
+                    
+                    <!-- Enterprise Plan -->
+                    <div class="card p-8 border border-gray-700 hover-scale animate-fade-in" style="animation-delay: 0.3s;">
+                        <h4 class="text-xl font-bold mb-2">Enterprise</h4>
+                        <div class="text-3xl font-bold mb-6">$99<span class="text-sm font-normal text-gray-400">/month</span></div>
+                        <ul class="space-y-3 mb-8">
+                            <li class="flex items-start">
+                                <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                                <span>Unlimited 3D models</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                                <span>Ultra high resolution</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                                <span>All editing tools</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                                <span>API access</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                                <span>Commercial usage rights</span>
+                            </li>
+                        </ul>
+                        <a href="#" class="btn-secondary w-full text-center">Choose Enterprise</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="section gradient-bg">
+        <div class="container mx-auto px-4 md:px-8">
+            <div class="text-center mb-16 animate-fade-in">
+                <h2 class="text-4xl font-bold mb-4">About 3DNexus</h2>
+                <p class="text-xl text-gray-300 max-w-3xl mx-auto">
+                    We're revolutionizing 3D content creation with cutting-edge AI technology
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-24">
+                <div class="animate-fade-in" style="animation-delay: 0.1s;">
+                    <h3 class="text-3xl font-bold mb-6">Our Story</h3>
+                    <p class="text-gray-300 mb-6">
+                        Founded in 2021 by a team of AI researchers and 3D graphics enthusiasts, 3DNexus was born from a simple idea: make professional 3D creation accessible to everyone, regardless of technical skill.
+                    </p>
+                    <p class="text-gray-300 mb-6">
+                        After years of research and development, we created a revolutionary AI system capable of understanding human intent and translating it into detailed 3D models. What once took professional artists days now takes seconds.
+                    </p>
+                    <p class="text-gray-300">
+                        Today, our mission is to democratize 3D creation and empower creators worldwide to bring their ideas to life without barriers.
+                    </p>
+                </div>
+                
+                <div class="animate-fade-in" style="animation-delay: 0.2s;">
+                    <div id="about-canvas" class="canvas-container glow"></div>
+                </div>
+            </div>
+            
+            <!-- Timeline -->
+            <div class="mb-24">
+                <h3 class="text-3xl font-bold mb-10 text-center animate-fade-in">Our Journey</h3>
+                <div class="max-w-3xl mx-auto">
+                    <div class="timeline-item animate-fade-in" style="animation-delay: 0.1s;">
+                        <h4 class="text-xl font-bold mb-2">2021</h4>
+                        <p class="text-gray-300">
+                            Founded 3DNexus with a vision to make 3D creation accessible to everyone through AI technology.
+                        </p>
+                    </div>
+                    <div class="timeline-item animate-fade-in" style="animation-delay: 0.2s;">
+                        <h4 class="text-xl font-bold mb-2">2022</h4>
+                        <p class="text-gray-300">
+                            Released first prototype of our text-to-3D generation system, achieving breakthrough results in accuracy and detail.
+                        </p>
+                    </div>
+                    <div class="timeline-item animate-fade-in" style="animation-delay: 0.3s;">
+                        <h4 class="text-xl font-bold mb-2">2023</h4>
+                        <p class="text-gray-300">
+                            Expanded capabilities with image-to-3D and sketch-to-3D generation, and secured Series A funding to accelerate development.
+                        </p>
+                    </div>
+                    <div class="timeline-item animate-fade-in" style="animation-delay: 0.4s;">
+                        <h4 class="text-xl font-bold mb-2">2024</h4>
+                        <p class="text-gray-300">
+                            Launched our full platform with advanced editing tools and enterprise solutions, serving over 100,000 creators worldwide.
+                        </p>
+                    </div>
+                    <div class="timeline-item animate-fade-in" style="animation-delay: 0.5s;">
+                        <h4 class="text-xl font-bold mb-2">2025</h4>
+                        <p class="text-gray-300">
+                            Pushing the boundaries of what's possible with real-time generation and next-generation AI models.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Team -->
+            <div>
+                <h3 class="text-3xl font-bold mb-10 text-center animate-fade-in">Our Team</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <!-- Team Member 1 -->
+                    <div class="card p-6 text-center hover-scale animate-fade-in" style="animation-delay: 0.1s;">
+                        <div class="w-32 h-32 rounded-full mx-auto mb-4 bg-gradient-to-br from-purple-800 to-indigo-600 flex items-center justify-center">
+                            <i class="fas fa-user text-4xl text-white"></i>
+                        </div>
+                        <h4 class="text-xl font-bold mb-1">Alex Chen</h4>
+                        <p class="text-purple-400 mb-4">CEO & Co-Founder</p>
+                        <p class="text-gray-300 text-sm mb-4">
+                            AI researcher with a passion for making complex technology accessible to everyone.
+                        </p>
+                        <div class="flex justify-center space-x-4">
+                            <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                                <i class="fab fa-linkedin"></i>
+                            </a>
+                            <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                                <i class="fab fa-twitter"></i>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Team Member 2 -->
+                    <div class="card p-6 text-center hover-scale animate-fade-in" style="animation-delay: 0.2s;">
+                        <div class="w-32 h-32 rounded-full mx-auto mb-4 bg-gradient-to-br from-purple-800 to-indigo-600 flex items-center justify-center">
+                            <i class="fas fa-user text-4xl text-white"></i>
+                        </div>
+                        <h4 class="text-xl font-bold mb-1">Sophia Kim</h4>
+                        <p class="text-purple-400 mb-4">CTO & Co-Founder</p>
+                        <p class="text-gray-300 text-sm mb-4">
+                            Computer vision expert with 10+ years experience in 3D graphics systems.
+                        </p>
+                        <div class="flex justify-center space-x-4">
+                            <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                                <i class="fab fa-linkedin"></i>
+                            </a>
+                            <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                                <i class="fab fa-github"></i>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Team Member 3 -->
+                    <div class="card p-6 text-center hover-scale animate-fade-in" style="animation-delay: 0.3s;">
+                        <div class="w-32 h-32 rounded-full mx-auto mb-4 bg-gradient-to-br from-purple-800 to-indigo-600 flex items-center justify-center">
+                            <i class="fas fa-user text-4xl text-white"></i>
+                        </div>
+                        <h4 class="text-xl font-bold mb-1">Marcus Johnson</h4>
+                        <p class="text-purple-400 mb-4">Head of Design</p>
+                        <p class="text-gray-300 text-sm mb-4">
+                            Former game artist turned UI/UX specialist with a focus on intuitive creator experiences.
+                        </p>
+                        <div class="flex justify-center space-x-4">
+                            <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                                <i class="fab fa-dribbble"></i>
+                            </a>
+                            <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                                <i class="fab fa-instagram"></i>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Team Member 4 -->
+                    <div class="card p-6 text-center hover-scale animate-fade-in" style="animation-delay: 0.4s;">
+                        <div class="w-32 h-32 rounded-full mx-auto mb-4 bg-gradient-to-br from-purple-800 to-indigo-600 flex items-center justify-center">
+                            <i class="fas fa-user text-4xl text-white"></i>
+                        </div>
+                        <h4 class="text-xl font-bold mb-1">Olivia Martinez</h4>
+                        <p class="text-purple-400 mb-4">AI Research Lead</p>
+                        <p class="text-gray-300 text-sm mb-4">
+                            PhD in Computer Science specializing in generative models and 3D representation learning.
+                        </p>
+                        <div class="flex justify-center space-x-4">
+                            <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                                <i class="fab fa-linkedin"></i>
+                            </a>
+                            <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                                <i class="fas fa-book"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stats -->
+            <div class="mt-24">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div class="card p-8 text-center hover-scale animate-fade-in" style="animation-delay: 0.1s;">
+                        <div class="counter" data-target="100000">0</div>
+                        <p class="text-gray-300">Users Worldwide</p>
+                    </div>
+                    <div class="card p-8 text-center hover-scale animate-fade-in" style="animation-delay: 0.2s;">
+                        <div class="counter" data-target="5000000">0</div>
+                        <p class="text-gray-300">3D Models Generated</p>
+                    </div>
+                    <div class="card p-8 text-center hover-scale animate-fade-in" style="animation-delay: 0.3s;">
+                        <div class="counter" data-target="98">0</div>
+                        <p class="text-gray-300">Countries Served</p>
+                    </div>
+                    <div class="card p-8 text-center hover-scale animate-fade-in" style="animation-delay: 0.4s;">
+                        <div class="counter" data-target="45">0</div>
+                        <p class="text-gray-300">Team Members</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Values -->
+            <div class="mt-24">
+                <h3 class="text-3xl font-bold mb-10 text-center animate-fade-in">Our Values</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="card p-8 hover-scale animate-fade-in" style="animation-delay: 0.1s;">
+                        <div class="feature-icon">
+                            <i class="fas fa-lightbulb text-2xl text-white"></i>
+                        </div>
+                        <h4 class="text-xl font-bold mb-4">Innovation</h4>
+                        <p class="text-gray-300">
+                            We push the boundaries of what's possible, continuously improving our technology to deliver breakthrough experiences.
+                        </p>
+                    </div>
+                    <div class="card p-8 hover-scale animate-fade-in" style="animation-delay: 0.2s;">
+                        <div class="feature-icon">
+                            <i class="fas fa-users text-2xl text-white"></i>
+                        </div>
+                        <h4 class="text-xl font-bold mb-4">Accessibility</h4>
+                        <p class="text-gray-300">
+                            We believe everyone should have access to powerful creative tools, regardless of technical skill or background.
+                        </p>
+                    </div>
+                    <div class="card p-8 hover-scale animate-fade-in" style="animation-delay: 0.3s;">
+                        <div class="feature-icon">
+                            <i class="fas fa-shield-alt text-2xl text-white"></i>
+                        </div>
+                        <h4 class="text-xl font-bold mb-4">Responsibility</h4>
+                        <p class="text-gray-300">
+                            We develop AI with ethical considerations at the forefront, ensuring our technology benefits humanity.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- CTA -->
+            <div class="mt-24 text-center">
+                <h3 class="text-3xl font-bold mb-6 animate-fade-in">Join Our Creative Community</h3>
+                <p class="text-xl text-gray-300 max-w-3xl mx-auto mb-8 animate-fade-in">
+                    Be part of the 3D revolution and connect with fellow creators
+                </p>
+                <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4 animate-fade-in">
+                    <a href="#create" class="btn-primary">Start Creating Now</a>
+                    <a href="#" class="btn-secondary">Join Discord Community</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Create Section -->
+    <section id="create" class="section">
+        <div class="container mx-auto px-4 md:px-8">
+            <div class="text-center mb-16 animate-fade-in">
+                <h2 class="text-4xl font-bold mb-4">Create Amazing 3D Content</h2>
+                <p class="text-xl text-gray-300 max-w-3xl mx-auto">
+                    Three powerful ways to bring your ideas to life with our AI technology
+                </p>
+            </div>
+            
+            <!-- Create Tabs -->
+            <div class="mb-12 flex justify-center animate-fade-in">
+                <div class="inline-flex rounded-md shadow-sm">
+                    <button class="tab-btn active" data-tab="text-to-3d">
+                        <i class="fas fa-comment mr-2"></i> Text-to-3D
+                    </button>
+                    <button class="tab-btn" data-tab="image-to-3d">
+                        <i class="fas fa-image mr-2"></i> Image-to-3D
+                    </button>
+                    <button class="tab-btn" data-tab="sketch-to-3d">
+                        <i class="fas fa-pencil-alt mr-2"></i> Sketch-to-3D
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Creation Interface -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Left Column: Controls -->
+                <div class="card p-8 animate-fade-in" style="animation-delay: 0.1s;">
+                    <!-- Text to 3D Form (Active by default) -->
+                    <div id="text-to-3d" class="tab-content active">
+                        <h3 class="text-2xl font-bold mb-6">Text to 3D Generator</h3>
+                        
+                        <div class="mb-6">
+                            <label class="block text-gray-300 mb-2">Describe what you want to create</label>
+                            <textarea class="w-full bg-[#2d2d2d] text-white p-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition" rows="4" placeholder="e.g., A futuristic hover bike with glowing blue accents"></textarea>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                            <div>
+                                <label class="block text-gray-300 mb-2">Style</label>
+                                <div class="select-wrapper">
+                                    <select class="custom-select">
+                                        <option>Realistic</option>
+                                        <option>Stylized</option>
+                                        <option>Low Poly</option>
+                                        <option>Cyberpunk</option>
+                                        <option>Fantasy</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-gray-300 mb-2">Output Format</label>
+                                <div class="select-wrapper">
+                                    <select class="custom-select">
+                                        <option>OBJ</option>
+                                        <option>FBX</option>
+                                        <option>GLTF/GLB</option>
+                                        <option>STL</option>
+                                        <option>USDZ</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-8">
+                            <label class="block text-gray-300 mb-2">Complexity <span class="tooltip"><i class="fas fa-info-circle text-gray-500"></i><span class="tooltip-text">Higher complexity means more detailed models but longer generation times</span></span></label>
+                            <div class="flex items-center space-x-4">
+                                <span class="text-sm">Simple</span>
+                                <input type="range" min="1" max="10" value="5" class="custom-slider flex-grow">
+                                <span class="text-sm">Complex</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-8">
+                            <label class="block text-gray-300 mb-2">Advanced Options</label>
+                            <div class="space-y-3">
+                                <label class="custom-checkbox">
+                                    Generate materials
+                                    <input type="checkbox" checked>
+                                    <span class="checkmark"></span>
+                                </label>
+                                <label class="custom-checkbox">
+                                    Generate textures
+                                    <input type="checkbox" checked>
+                                    <span class="checkmark"></span>
+                                </label>
+                                <label class="custom-checkbox">
+                                    Include environment
+                                    <input type="checkbox">
+                                    <span class="checkmark"></span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <label class="block text-gray-300 mb-2">Example Prompts</label>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div class="p-3 bg-[#2d2d2d] rounded-lg cursor-pointer hover:bg-[#3d3d3d] transition">
+                                    A detailed dragon with scales and wings
+                                </div>
+                                <div class="p-3 bg-[#2d2d2d] rounded-lg cursor-pointer hover:bg-[#3d3d3d] transition">
+                                    Modern minimalist desk lamp
+                                </div>
+                                <div class="p-3 bg-[#2d2d2d] rounded-lg cursor-pointer hover:bg-[#3d3d3d] transition">
+                                    Fantasy castle on a floating island
+                                </div>
+                                <div class="p-3 bg-[#2d2d2d] rounded-lg cursor-pointer hover:bg-[#3d3d3d] transition">
+                                    Futuristic sci-fi helmet with visor
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button class="btn-primary w-full">
+                            <i class="fas fa-magic mr-2"></i> Generate 3D Model
+                        </button>
+                    </div>
+                    
+                    <!-- Image to 3D Form (Hidden by default) -->
+                    <div id="image-to-3d" class="tab-content hidden">
+                        <h3 class="text-2xl font-bold mb-6">Image to 3D Generator</h3>
+                        
+                        <div class="mb-6">
+                            <label class="block text-gray-300 mb-2">Upload Image</label>
+                            <div class="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center cursor-pointer hover:border-purple-500 transition">
+                                <i class="fas fa-cloud-upload-alt text-4xl text-gray-500 mb-4"></i>
+                                <p class="text-gray-300 mb-2">Drag and drop your image here</p>
+                                <p class="text-gray-500 text-sm mb-4">or</p>
+                                <button class="btn-secondary">Browse Files</button>
+                                <input type="file" class="hidden" accept="image/*">
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                            <div>
+                                <label class="block text-gray-300 mb-2">Reconstruction Mode</label>
+                                <div class="select-wrapper">
+                                    <select class="custom-select">
+                                        <option>Standard</option>
+                                        <option>Detailed</option>
+                                        <option>Fast</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-gray-300 mb-2">Output Format</label>
+                                <div class="select-wrapper">
+                                    <select class="custom-select">
+                                        <option>OBJ</option>
+                                        <option>FBX</option>
+                                        <option>GLTF/GLB</option>
+                                        <option>STL</option>
+                                        <option>USDZ</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-8">
+                            <label class="block text-gray-300 mb-2">Texture Quality <span class="tooltip"><i class="fas fa-info-circle text-gray-500"></i><span class="tooltip-text">Higher quality textures will be more detailed but result in larger file sizes</span></span></label>
+                            <div class="flex items-center space-x-4">
+                                <span class="text-sm">Standard</span>
+                                <input type="range" min="1" max="10" value="7" class="custom-slider flex-grow">
+                                <span class="text-sm">Ultra</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-8">
+                            <label class="block text-gray-300 mb-2">Advanced Options</label>
+                            <div class="space-y-3">
+                                <label class="custom-checkbox">
+                                    Auto-fix holes in mesh
+                                    <input type="checkbox" checked>
+                                    <span class="checkmark"></span>
+                                </label>
+                                <label class="custom-checkbox">
+                                    Generate normal maps
+                                    <input type="checkbox" checked>
+                                    <span class="checkmark"></span>
+                                </label>
+                                <label class="custom-checkbox">
+                                    Apply PBR materials
+                                    <input type="checkbox">
+                                    <span class="checkmark"></span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <button class="btn-primary w-full">
+                            <i class="fas fa-magic mr-2"></i> Generate 3D Model
+                        </button>
+                    </div>
+                    
+                    <!-- Sketch to 3D Form (Hidden by default) -->
+                    <div id="sketch-to-3d" class="tab-content hidden">
+                        <h3 class="text-2xl font-bold mb-6">Sketch to 3D Generator</h3>
+                        
+                        <div class="mb-6">
+                            <label class="block text-gray-300 mb-2">Option 1: Draw Sketch</label>
+                            <div class="bg-[#2d2d2d] rounded-lg h-48 flex items-center justify-center mb-2">
+                                <p class="text-gray-500">Interactive drawing canvas will appear here</p>
+                            </div>
+                            <div class="flex justify-end">
+                                <button class="text-gray-300 text-sm hover:text-white transition">
+                                    <i class="fas fa-trash mr-1"></i> Clear Canvas
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <label class="block text-gray-300 mb-2">Option 2: Upload Sketch</label>
+                            <div class="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center cursor-pointer hover:border-purple-500 transition">
+                                <i class="fas fa-file-upload text-2xl text-gray-500 mb-2"></i>
+                                <p class="text-gray-300 text-sm mb-2">Drag and drop your sketch here</p>
+                                <button class="btn-secondary text-sm py-2 px-4">Browse Files</button>
+                                <input type="file" class="hidden" accept="image/*">
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                            <div>
+                                <label class="block text-gray-300 mb-2">Interpretation Style</label>
+                                <div class="select-wrapper">
+                                    <select class="custom-select">
+                                        <option>Literal</option>
+                                        <option>Creative</option>
+                                        <option>Abstract</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-gray-300 mb-2">Output Format</label>
+                                <div class="select-wrapper">
+                                    <select class="custom-select">
+                                        <option>OBJ</option>
+                                        <option>FBX</option>
+                                        <option>GLTF/GLB</option>
+                                        <option>STL</option>
+                                        <option>USDZ</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <label class="block text-gray-300 mb-2">Add Text Description (Optional)</label>
+                            <textarea class="w-full bg-[#2d2d2d] text-white p-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition" rows="2" placeholder="Additional details about your sketch..."></textarea>
+                        </div>
+                        
+                        <div class="mb-8">
+                            <label class="block text-gray-300 mb-2">Style Reference</label>
+                            <div class="grid grid-cols-4 gap-2">
+                                <div class="style-option rounded-lg h-16 bg-gradient-to-br from-blue-900 to-purple-700"></div>
+                                <div class="style-option rounded-lg h-16 bg-gradient-to-br from-purple-900 to-red-700"></div>
+                                <div class="style-option rounded-lg h-16 bg-gradient-to-br from-blue-700 to-green-800"></div>
+                                <div class="style-option rounded-lg h-16 bg-gradient-to-br from-yellow-700 to-red-800 selected"></div>
+                            </div>
+                        </div>
+                        
+                        <button class="btn-primary w-full">
+                            <i class="fas fa-magic mr-2"></i> Generate 3D Model
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Right Column: Preview -->
+                <div class="animate-fade-in" style="animation-delay: 0.2s;">
+                    <div class="card p-8">
+                        <h3 class="text-2xl font-bold mb-6">Preview</h3>
+                        
+                        <div class="canvas-container">
+                            <div id="preview-canvas"></div>
+                            
+                            <!-- Loading Overlay (Hidden by default) -->
+                            <div class="loading-overlay hidden">
+                                <div class="spinner"></div>
+                                <p class="text-white mb-4">Generating your 3D model...</p>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 65%;"></div>
+                                </div>
+                                <p class="text-sm text-gray-300">Step 2/3: Applying materials</p>
+                            </div>
+                        </div>
+                        
+                        <div class="camera-controls mt-4 flex justify-center">
+                            <button class="camera-btn" title="Rotate left">
+                                <i class="fas fa-undo"></i>
+                            </button>
+                            <button class="camera-btn" title="Reset view">
+                                <i class="fas fa-home"></i>
+                            </button>
+                            <button class="camera-btn" title="Rotate right">
+                                <i class="fas fa-redo"></i>
+                            </button>
+                            <button class="camera-btn" title="Zoom in">
+                                <i class="fas fa-search-plus"></i>
+                            </button>
+                            <button class="camera-btn" title="Zoom out">
+                                <i class="fas fa-search-minus"></i>
+                            </button>
+                            <button class="camera-btn" title="Toggle wireframe">
+                                <i class="fas fa-border-none"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="mt-6 grid grid-cols-2 gap-4">
+                            <button class="btn-secondary flex items-center justify-center">
+                                <i class="fas fa-download mr-2"></i> Download
+                            </button>
+                            <button class="btn-secondary flex items-center justify-center">
+                                <i class="fas fa-share-alt mr-2"></i> Share
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Creations -->
+                    <div class="mt-8 card p-8">
+                        <h3 class="text-xl font-bold mb-4">Recent Creations</h3>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="rounded-lg h-24 bg-gradient-to-br from-purple-900 to-indigo-800 cursor-pointer hover:scale-105 transition"></div>
+                            <div class="rounded-lg h-24 bg-gradient-to-br from-indigo-900 to-blue-800 cursor-pointer hover:scale-105 transition"></div>
+                            <div class="rounded-lg h-24 bg-gradient-to-br from-blue-900 to-purple-800 cursor-pointer hover:scale-105 transition"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dashboard Section -->
+    <section id="dashboard" class="section">
+        <div class="container mx-auto px-4 md:px-8">
+            <div class="text-center mb-16 animate-fade-in">
+                <h2 class="text-4xl font-bold mb-4">Professional Dashboard</h2>
+                <p class="text-xl text-gray-300 max-w-3xl mx-auto">
+                    Manage your creations and account with our powerful dashboard
+                </p>
+            </div>
+            
+            <div class="flex flex-col md:flex-row gap-8">
+                <!-- Sidebar Navigation -->
+                <div class="md:w-64 animate-fade-in" style="animation-delay: 0.1s;">
+                    <div class="dashboard-nav">
+                        <div class="px-6 mb-8">
+                            <h3 class="text-lg font-bold">Dashboard</h3>
+                        </div>
+                        
+                        <div class="space-y-1">
+                            <a href="#" class="dashboard-link active">
+                                <i class="fas fa-home"></i> Overview
+                            </a>
+                            <a href="#" class="dashboard-link">
+                                <i class="fas fa-cubes"></i> My Models
+                            </a>
+                            <a href="#" class="dashboard-link">
+                                <i class="fas fa-layer-group"></i> Collections
+                            </a>
+                            <a href="#" class="dashboard-link">
+                                <i class="fas fa-sliders-h"></i> Settings
+                            </a>
+                            <a href="#" class="dashboard-link">
+                                <i class="fas fa-credit-card"></i> Billing
+                            </a>
+                            <a href="#" class="dashboard-link">
+                                <i class="fas fa-question-circle"></i> Help
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Main Dashboard Content -->
+                <div class="flex-1 animate-fade-in" style="animation-delay: 0.2s;">
+                    <div class="card p-8 mb-8">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+                            <h3 class="text-2xl font-bold">Overview</h3>
+                            <div class="flex space-x-4 mt-4 md:mt-0">
+                                <button class="btn-secondary py-2 px-4 text-sm">
+                                    <i class="fas fa-calendar-alt mr-2"></i> Last 30 Days
+                                </button>
+                                <button class="btn-primary py-2 px-4 text-sm">
+                                    <i class="fas fa-download mr-2"></i> Export
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <div class="p-6 bg-[#1e1e1e] rounded-lg">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div>
+                                        <p class="text-gray-400 text-sm">Models Created</p>
+                                        <h4 class="text-3xl font-bold">28</h4>
+                                    </div>
+                                    <div class="p-3 bg-purple-900/30 rounded-lg">
+                                        <i class="fas fa-cube text-purple-400"></i>
+                                    </div>
+                                </div>
+                                <p class="text-green-400 text-sm flex items-center">
+                                    <i class="fas fa-arrow-up mr-1"></i> 12% from last month
+                                </p>
+                            </div>
+                            
+                            <div class="p-6 bg-[#1e1e1e] rounded-lg">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div>
+                                        <p class="text-gray-400 text-sm">Storage Used</p>
+                                        <h4 class="text-3xl font-bold">3.8 GB</h4>
+                                    </div>
+                                    <div class="p-3 bg-blue-900/30 rounded-lg">
+                                        <i class="fas fa-database text-blue-400"></i>
+                                    </div>
+                                </div>
+                                <div class="w-full bg-gray-700 rounded-full h-1.5">
+                                    <div class="bg-blue-500 h-1.5 rounded-full" style="width: 45%"></div>
+                                </div>
+                                <p class="text-gray-400 text-sm mt-2">45% of 10GB</p>
+                            </div>
+                            
+                            <div class="p-6 bg-[#1e1e1e] rounded-lg">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div>
+                                        <p class="text-gray-400 text-sm">Subscription</p>
+                                        <h4 class="text-3xl font-bold">Pro</h4>
+                                    </div>
+                                    <div class="p-3 bg-green-900/30 rounded-lg">
+                                        <i class="fas fa-crown text-yellow-400"></i>
+                                    </div>
+                                </div>
+                                <p class="text-gray-300 text-sm">Renews on November 12</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-8">
+                            <h4 class="text-xl font-bold mb-4">Recent Activity</h4>
+                            <div class="space-y-4">
+                                <div class="p-4 bg-[#1e1e1e] rounded-lg flex items-center">
+                                    <div class="p-3 bg-purple-900/30 rounded-lg mr-4">
+                                        <i class="fas fa-magic text-purple-400"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="font-medium">Generated "Futuristic City Tower"</p>
+                                        <p class="text-sm text-gray-400">Today, 10:45 AM</p>
+                                    </div>
+                                    <button class="text-gray-400 hover:text-white transition">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                </div>
+                                
+                                <div class="p-4 bg-[#1e1e1e] rounded-lg flex items-center">
+                                    <div class="p-3 bg-blue-900/30 rounded-lg mr-4">
+                                        <i class="fas fa-edit text-blue-400"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="font-medium">Edited "Fantasy Character"</p>
+                                        <p class="text-sm text-gray-400">Yesterday, 3:22 PM</p>
+                                    </div>
+                                    <button class="text-gray-400 hover:text-white transition">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                </div>
+                                
+                                <div class="p-4 bg-[#1e1e1e] rounded-lg flex items-center">
+                                    <div class="p-3 bg-green-900/30 rounded-lg mr-4">
+                                        <i class="fas fa-download text-green-400"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="font-medium">Downloaded "Sci-fi Helmet" as OBJ</p>
+                                        <p class="text-sm text-gray-400">Oct 5, 5:30 PM</p>
+                                    </div>
+                                    <button class="text-gray-400 hover:text-white transition">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div class="lg:col-span-2">
+                            <div class="card p-8">
+                                <h3 class="text-xl font-bold mb-6">Your Models</h3>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                                    <div class="relative group">
+                                        <div class="rounded-lg h-32 bg-gradient-to-br from-purple-900 to-indigo-800 cursor-pointer overflow-hidden">
+                                            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                                <div class="flex space-x-2">
+                                                    <button class="p-2 bg-white bg-opacity-20 rounded-full">
+                                                        <i class="fas fa-eye text-white"></i>
+                                                    </button>
+                                                    <button class="p-2 bg-white bg-opacity-20 rounded-full">
+                                                        <i class="fas fa-edit text-white"></i>
+                                                    </button>
+                                                    <button class="p-2 bg-white bg-opacity-20 rounded-full">
+                                                        <i class="fas fa-trash text-white"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <p class="mt-2 text-sm font-medium">Futuristic City</p>
+                                        <p class="text-xs text-gray-400">Oct 6, 2025</p>
+                                    </div>
+                                    
+                                    <div class="relative group">
+                                        <div class="rounded-lg h-32 bg-gradient-to-br from-blue-900 to-purple-800 cursor-pointer overflow-hidden">
+                                            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                                <div class="flex space-x-2">
+                                                    <button class="p-2 bg-white bg-opacity-20 rounded-full">
+                                                        <i class="fas fa-eye text-white"></i>
+                                                    </button>
+                                                    <button class="p-2 bg-white bg-opacity-20 rounded-full">
+                                                        <i class="fas fa-edit text-white"></i>
+                                                    </button>
+                                                    <button class="p-2 bg-white bg-opacity-20 rounded-full">
+                                                        <i class="fas fa-trash text-white"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <p class="mt-2 text-sm font-medium">Fantasy Character</p>
+                                        <p class="text-xs text-gray-400">Oct 5, 2025</p>
+                                    </div>
+                                    
+                                    <div class="relative group">
+                                        <div class="rounded-lg h-32 bg-gradient-to-br from-indigo-900 to-blue-800 cursor-pointer overflow-hidden">
+                                            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                                <div class="flex space-x-2">
+                                                    <button class="p-2 bg-white bg-opacity-20 rounded-full">
+                                                        <i class="fas fa-eye text-white"></i>
+                                                    </button>
+                                                    <button class="p-2 bg-white bg-opacity-20 rounded-full">
+                                                        <i class="fas fa-edit text-white"></i>
+                                                    </button>
+                                                    <button class="p-2 bg-white bg-opacity-20 rounded-full">
+                                                        <i class="fas fa-trash text-white"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <p class="mt-2 text-sm font-medium">Sci-fi Helmet</p>
+                                        <p class="text-xs text-gray-400">Oct 3, 2025</p>
+                                    </div>
+                                </div>
+                                <div class="text-center">
+                                    <button class="btn-secondary py-2 px-4 text-sm">View All Models</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="card p-8">
+                                <h3 class="text-xl font-bold mb-6">Quick Actions</h3>
+                                <div class="space-y-3">
+                                    <a href="#create" class="flex items-center p-3 bg-[#1e1e1e] rounded-lg hover:bg-[#2a2a2a] transition">
+                                        <div class="p-2 bg-purple-900/30 rounded-lg mr-3">
+                                            <i class="fas fa-plus text-purple-400"></i>
+                                        </div>
+                                        <span>Create New Model</span>
+                                    </a>
+                                    <a href="#" class="flex items-center p-3 bg-[#1e1e1e] rounded-lg hover:bg-[#2a2a2a] transition">
+                                        <div class="p-2 bg-blue-900/30 rounded-lg mr-3">
+                                            <i class="fas fa-upload text-blue-400"></i>
+                                        </div>
+                                        <span>Import Existing Model</span>
+                                    </a>
+                                    <a href="#" class="flex items-center p-3 bg-[#1e1e1e] rounded-lg hover:bg-[#2a2a2a] transition">
+                                        <div class="p-2 bg-green-900/30 rounded-lg mr-3">
+                                            <i class="fas fa-folder-plus text-green-400"></i>
+                                        </div>
+                                        <span>Create Collection</span>
+                                    </a>
+                                    <a href="#" class="flex items-center p-3 bg-[#1e1e1e] rounded-lg hover:bg-[#2a2a2a] transition">
+                                        <div class="p-2 bg-orange-900/30 rounded-lg mr-3">
+                                            <i class="fas fa-share-alt text-orange-400"></i>
+                                        </div>
+                                        <span>Share with Team</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-[#0d0d0d] border-t border-gray-800 pt-16 pb-8">
+        <div class="container mx-auto px-4 md:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12">
+                <div class="lg:col-span-2">
+                    <a href="#hero" class="text-2xl font-bold logo-3d text-white mb-4 inline-block">
+                        3D<span class="text-purple-500">Nexus</span>
+                    </a>
+                    <p class="text-gray-400 mb-6">
+                        Transforming ideas into stunning 3D models with the power of AI. Create, customize, and share your creations with the world.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="h-10 w-10 rounded-full bg-[#1e1e1e] flex items-center justify-center text-gray-400 hover:text-white hover:bg-purple-800 transition">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="h-10 w-10 rounded-full bg-[#1e1e1e] flex items-center justify-center text-gray-400 hover:text-white hover:bg-purple-800 transition">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="#" class="h-10 w-10 rounded-full bg-[#1e1e1e] flex items-center justify-center text-gray-400 hover:text-white hover:bg-purple-800 transition">
+                            <i class="fab fa-youtube"></i>
+                        </a>
+                        <a href="#" class="h-10 w-10 rounded-full bg-[#1e1e1e] flex items-center justify-center text-gray-400 hover:text-white hover:bg-purple-800 transition">
+                            <i class="fab fa-discord"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-bold mb-4">Platform</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#features" class="text-gray-400 hover:text-white transition">Features</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Pricing</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Enterprise</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">API Documentation</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Status</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-bold mb-4">Resources</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Blog</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Tutorials</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Support Center</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Community</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Webinars</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-bold mb-4">Company</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#about" class="text-gray-400 hover:text-white transition">About Us</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Careers</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Press</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Contact</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Partners</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center">
+                <p class="text-gray-500 text-sm mb-4 md:mb-0">
+                    &copy; 2025 3DNexus. All rights reserved.
+                </p>
+                <div class="flex space-x-6">
+                    <a href="#" class="text-gray-500 text-sm hover:text-gray-300 transition">Terms of Service</a>
+                    <a href="#" class="text-gray-500 text-sm hover:text-gray-300 transition">Privacy Policy</a>
+                    <a href="#" class="text-gray-500 text-sm hover:text-gray-300 transition">Cookies</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize 3D scenes when the document is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Create Three.js scenes
+            initializeHeroScene();
+            initializeFeaturesScene();
+            initializeAboutScene();
+            initializePreviewScene();
+            
+            // Initialize counters
+            initializeCounters();
+            
+            // Initialize tab switching
+            initializeTabs();
+            
+            // Initialize navigation highlighting
+            initializeNavigation();
+            
+            // Mobile menu toggle
+            const menuToggle = document.querySelector('.fa-bars').parentElement;
+            const closeMenu = document.querySelector('.fa-times').parentElement;
+            const mobileMenu = document.querySelector('.mobile-menu');
+            
+            menuToggle.addEventListener('click', function() {
+                mobileMenu.classList.remove('hidden');
+            });
+            
+            closeMenu.addEventListener('click', function() {
+                mobileMenu.classList.add('hidden');
+            });
+            
+            // Make navigation links close mobile menu
+            document.querySelectorAll('.mobile-menu a').forEach(link => {
+                link.addEventListener('click', function() {
+                    mobileMenu.classList.add('hidden');
+                });
+            });
+            
+            // Navbar scroll effect
+            window.addEventListener('scroll', function() {
+                const navbar = document.querySelector('.navbar');
+                if (window.scrollY > 10) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+            });
+        });
+
+        // Initialize Hero Scene
+        function initializeHeroScene() {
+            const container = document.getElementById('hero-canvas');
+            
+            // Create scene, camera, and renderer
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+            
+            // Create a torus knot
+            const geometry = new THREE.TorusKnotGeometry(3, 1, 128, 16);
+            const material = new THREE.MeshStandardMaterial({ 
+                color: 0x8a2be2,
+                metalness: 0.7,
+                roughness: 0.2,
+                emissive: 0x8a2be2,
+                emissiveIntensity: 0.2
+            });
+            const torusKnot = new THREE.Mesh(geometry, material);
+            scene.add(torusKnot);
+            
+            // Add lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            
+            const pointLight = new THREE.PointLight(0x8a2be2, 1, 100);
+            pointLight.position.set(5, 5, 5);
+            scene.add(pointLight);
+            
+            const pointLight2 = new THREE.PointLight(0xff6b6b, 1, 100);
+            pointLight2.position.set(-5, -5, 5);
+            scene.add(pointLight2);
+            
+            // Position camera
+            camera.position.z = 10;
+            
+            // Add controls
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.enableZoom = false;
+            
+            // Animation loop
+            function animate() {
+                requestAnimationFrame(animate);
+                torusKnot.rotation.x += 0.01;
+                torusKnot.rotation.y += 0.01;
+                controls.update();
+                renderer.render(scene, camera);
+            }
+            
+            animate();
+            
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+        }
+
+        // Initialize Features Scene
+        function initializeFeaturesScene() {
+            const container = document.getElementById('features-canvas');
+            
+            if (!container) return;
+            
+            // Create scene, camera, and renderer
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+            
+            // Create a sphere with vertices
+            const geometry = new THREE.SphereGeometry(3, 32, 32);
+            const material = new THREE.MeshStandardMaterial({ 
+                color: 0x8a2be2,
+                metalness: 0.5,
+                roughness: 0.3,
+                wireframe: true
+            });
+            const sphere = new THREE.Mesh(geometry, material);
+            scene.add(sphere);
+            
+            // Add lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            
+            const pointLight = new THREE.PointLight(0x8a2be2, 1, 100);
+            pointLight.position.set(5, 5, 5);
+            scene.add(pointLight);
+            
+            // Position camera
+            camera.position.z = 10;
+            
+            // Add controls
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 1;
+            controls.enableZoom = false;
+            
+            // Animation loop
+            function animate() {
+                requestAnimationFrame(animate);
+                controls.update();
+                renderer.render(scene, camera);
+            }
+            
+            animate();
+            
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+        }
+
+        // Initialize About Scene
+        function initializeAboutScene() {
+            const container = document.getElementById('about-canvas');
+            
+            if (!container) return;
+            
+            // Create scene, camera, and renderer
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+            
+            // Create a complex shape - a combination of geometries
+            const group = new THREE.Group();
+            
+            // Create central cube
+            const cubeGeometry = new THREE.BoxGeometry(2, 2, 2);
+            const cubeMaterial = new THREE.MeshStandardMaterial({
+                color: 0x8a2be2,
+                metalness: 0.7,
+                roughness: 0.2
+            });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            group.add(cube);
+            
+            // Add several spheres around the cube
+            const sphereGeometry = new THREE.SphereGeometry(0.5, 16, 16);
+            const sphereMaterial = new THREE.MeshStandardMaterial({
+                color: 0xff6b6b,
+                metalness: 0.7,
+                roughness: 0.2
+            });
+            
+            // Position spheres in a circle around the cube
+            for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI * 2;
+                const x = Math.cos(angle) * 3;
+                const y = Math.sin(angle) * 3;
+                
+                const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+                sphere.position.set(x, y, 0);
+                group.add(sphere);
+                
+                // Connect with lines
+                const lineMaterial = new THREE.LineBasicMaterial({ color: 0x8a2be2 });
+                const lineGeometry = new THREE.BufferGeometry().setFromPoints([
+                    new THREE.Vector3(0, 0, 0),
+                    new THREE.Vector3(x, y, 0)
+                ]);
+                const line = new THREE.Line(lineGeometry, lineMaterial);
+                group.add(line);
+            }
+            
+            scene.add(group);
+            
+            // Add lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            
+            const pointLight = new THREE.PointLight(0x8a2be2, 1, 100);
+            pointLight.position.set(5, 5, 5);
+            scene.add(pointLight);
+            
+            const pointLight2 = new THREE.PointLight(0xff6b6b, 1, 100);
+            pointLight2.position.set(-5, -5, 5);
+            scene.add(pointLight2);
+            
+            // Position camera
+            camera.position.z = 10;
+            
+            // Add controls
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 0.5;
+            controls.enableZoom = false;
+            
+            // Animation loop
+            function animate() {
+                requestAnimationFrame(animate);
+                group.rotation.y += 0.005;
+                controls.update();
+                renderer.render(scene, camera);
+            }
+            
+            animate();
+            
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+        }
+
+        // Initialize Preview Scene
+        function initializePreviewScene() {
+            const container = document.getElementById('preview-canvas');
+            
+            if (!container) return;
+            
+            // Create scene, camera, and renderer
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+            
+            // Create grid helper
+            const gridHelper = new THREE.GridHelper(10, 10, 0x888888, 0x444444);
+            scene.add(gridHelper);
+            
+            // Add a placeholder object (initially nothing to display)
+            const placeholderText = document.createElement('div');
+            placeholderText.style.position = 'absolute';
+            placeholderText.style.top = '50%';
+            placeholderText.style.left = '50%';
+            placeholderText.style.transform = 'translate(-50%, -50%)';
+            placeholderText.style.color = '#666';
+            placeholderText.innerHTML = 'Generate a model to preview it here';
+            container.appendChild(placeholderText);
+            
+            // Add lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(1, 1, 1);
+            scene.add(directionalLight);
+            
+            // Position camera
+            camera.position.set(3, 3, 5);
+            camera.lookAt(0, 0, 0);
+            
+            // Add controls
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            
+            // Animation loop
+            function animate() {
+                requestAnimationFrame(animate);
+                controls.update();
+                renderer.render(scene, camera);
+            }
+            
+            animate();
+            
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+            
+            // Handle camera controls from buttons
+            const resetBtn = document.querySelector('.camera-btn[title="Reset view"]');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', function() {
+                    gsap.to(camera.position, {
+                        x: 3,
+                        y: 3,
+                        z: 5,
+                        duration: 1,
+                        ease: 'power2.inOut',
+                        onUpdate: function() {
+                            camera.lookAt(0, 0, 0);
+                        }
+                    });
+                });
+            }
+            
+            const rotateLeftBtn = document.querySelector('.camera-btn[title="Rotate left"]');
+            if (rotateLeftBtn) {
+                rotateLeftBtn.addEventListener('click', function() {
+                    gsap.to(camera.position, {
+                        x: camera.position.z * -1,
+                        z: camera.position.x,
+                        duration: 0.5,
+                        ease: 'power1.inOut',
+                        onUpdate: function() {
+                            camera.lookAt(0, 0, 0);
+                        }
+                    });
+                });
+            }
+            
+            const rotateRightBtn = document.querySelector('.camera-btn[title="Rotate right"]');
+            if (rotateRightBtn) {
+                rotateRightBtn.addEventListener('click', function() {
+                    gsap.to(camera.position, {
+                        x: camera.position.z,
+                        z: camera.position.x * -1,
+                        duration: 0.5,
+                        ease: 'power1.inOut',
+                        onUpdate: function() {
+                            camera.lookAt(0, 0, 0);
+                        }
+                    });
+                });
+            }
+            
+            const zoomInBtn = document.querySelector('.camera-btn[title="Zoom in"]');
+            if (zoomInBtn) {
+                zoomInBtn.addEventListener('click', function() {
+                    gsap.to(camera.position, {
+                        x: camera.position.x * 0.7,
+                        y: camera.position.y * 0.7,
+                        z: camera.position.z * 0.7,
+                        duration: 0.5,
+                        ease: 'power1.inOut',
+                        onUpdate: function() {
+                            camera.lookAt(0, 0, 0);
+                        }
+                    });
+                });
+            }
+            
+            const zoomOutBtn = document.querySelector('.camera-btn[title="Zoom out"]');
+            if (zoomOutBtn) {
+                zoomOutBtn.addEventListener('click', function() {
+                    gsap.to(camera.position, {
+                        x: camera.position.x * 1.3,
+                        y: camera.position.y * 1.3,
+                        z: camera.position.z * 1.3,
+                        duration: 0.5,
+                        ease: 'power1.inOut',
+                        onUpdate: function() {
+                            camera.lookAt(0, 0, 0);
+                        }
+                    });
+                });
+            }
+            
+            // Simulate load button functionality
+            const generateBtn = document.querySelector('#text-to-3d .btn-primary');
+            if (generateBtn) {
+                generateBtn.addEventListener('click', function() {
+                    // Show loading overlay
+                    const loadingOverlay = document.querySelector('.loading-overlay');
+                    loadingOverlay.classList.remove('hidden');
+                    
+                    // Simulate progress
+                    let progress = 0;
+                    const progressFill = document.querySelector('.progress-fill');
+                    const progressInterval = setInterval(function() {
+                        progress += 5;
+                        progressFill.style.width = progress + '%';
+                        
+                        if (progress === 25) {
+                            document.querySelector('.loading-overlay p:last-child').textContent = 'Step 1/3: Generating base mesh';
+                        } else if (progress === 50) {
+                            document.querySelector('.loading-overlay p:last-child').textContent = 'Step 2/3: Applying materials';
+                        } else if (progress === 75) {
+                            document.querySelector('.loading-overlay p:last-child').textContent = 'Step 3/3: Finalizing model';
+                        }
+                        
+                        if (progress >= 100) {
+                            clearInterval(progressInterval);
+                            
+                            // After "loading" completes, hide the overlay and show a model
+                            setTimeout(function() {
+                                loadingOverlay.classList.add('hidden');
+                                placeholderText.style.display = 'none';
+                                
+                                // Add a model to the scene
+                                // For this example, we'll add a simple mesh
+                                const modelGeometry = new THREE.IcosahedronGeometry(2, 1);
+                                const modelMaterial = new THREE.MeshStandardMaterial({ 
+                                    color: 0x8a2be2,
+                                    metalness: 0.7,
+                                    roughness: 0.2 
+                                });
+                                const model = new THREE.Mesh(modelGeometry, modelMaterial);
+                                scene.add(model);
+                                
+                                // Reset camera
+                                gsap.to(camera.position, {
+                                    x: 3,
+                                    y: 3,
+                                    z: 5,
+                                    duration: 1,
+                                    ease: 'power2.inOut',
+                                    onUpdate: function() {
+                                        camera.lookAt(0, 0, 0);
+                                    }
+                                });
+                            }, 500);
+                        }
+                    }, 100);
+                });
+            }
+        }
+
+        // Initialize Counters Animation
+        function initializeCounters() {
+            const counters = document.querySelectorAll('.counter');
+            
+            if (!counters.length) return;
+            
+            const speed = 200; // Lower is faster
+            
+            const animateCounters = () => {
+                counters.forEach(counter => {
+                    const target = +counter.getAttribute('data-target');
+                    const count = +counter.innerText;
+                    
+                    const increment = Math.ceil(target / speed);
+                    
+                    if (count < target) {
+                        counter.innerText = count + increment;
+                        setTimeout(animateCounters, 1);
+                    } else {
+                        counter.innerText = target.toLocaleString();
+                    }
+                });
+            };
+            
+            // Start animation when section becomes visible
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        animateCounters();
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.5 });
+            
+            const statsSection = document.querySelector('.counter').closest('.mt-24');
+            if (statsSection) {
+                observer.observe(statsSection);
+            }
+        }
+
+        // Initialize Tab Switching
+        function initializeTabs() {
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            if (!tabBtns.length || !tabContents.length) return;
+            
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Remove active class from all buttons
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    
+                    // Add active class to clicked button
+                    this.classList.add('active');
+                    
+                    // Hide all tab contents
+                    tabContents.forEach(content => content.classList.add('hidden'));
+                    
+                    // Show the corresponding tab content
+                    const tabId = this.getAttribute('data-tab');
+                    document.getElementById(tabId).classList.remove('hidden');
+                });
+            });
+        }
+
+        // Initialize Navigation Highlighting
+        function initializeNavigation() {
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('.nav-link');
+            
+            if (!sections.length || !navLinks.length) return;
+            
+            window.addEventListener('scroll', function() {
+                let current = '';
+                
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.clientHeight;
+                    if (pageYOffset >= sectionTop - 300) {
+                        current = section.getAttribute('id');
+                    }
+                });
+                
+                navLinks.forEach(link => {
+                    link.classList.remove('active-nav');
+                    const href = link.getAttribute('href').substring(1);
+                    if (href === current) {
+                        link.classList.add('active-nav');
+                    }
+                });
+            });
+        }
+    </script>
+</body>
+</html>
