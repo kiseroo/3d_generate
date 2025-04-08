@@ -36,7 +36,7 @@
             width: 100%;
             height: 100%;
             z-index: -1;
-            opacity: 0.4;
+            opacity: 0.5; /* Adjusted from 0.4 to 0.5 for better visibility */
             pointer-events: none;
         }
 
@@ -1797,21 +1797,32 @@
             resizeCanvas();
             window.addEventListener('resize', resizeCanvas);
             
-            // Particle settings
+            // ENHANCED SETTINGS: Increased particle size by ~30% and improved line visibility
             const particleCount = 100;
             const particles = [];
             const connectionDistance = 150;
-            const particleSize = 2;
+            const particleMinSize = 2; // Increased from 1.5 to 2
+            const particleMaxSize = 4.5; // Increased from 3.5 to 4.5
             
-            // Particle class
+            // Particle class with improved visibility
             class Particle {
                 constructor() {
                     this.x = Math.random() * canvas.width;
                     this.y = Math.random() * canvas.height;
-                    this.vx = (Math.random() - 0.5) * 0.5;
-                    this.vy = (Math.random() - 0.5) * 0.5;
-                    this.size = Math.random() * particleSize + 1;
-                    this.color = `rgba(138, 43, 226, ${Math.random() * 0.5 + 0.3})`;
+                    this.vx = (Math.random() - 0.5) * 0.25; // Slightly slower movement
+                    this.vy = (Math.random() - 0.5) * 0.25; // Slightly slower movement
+                    this.size = Math.random() * (particleMaxSize - particleMinSize) + particleMinSize;
+                    
+                    // Brighter purple colors with balanced opacity
+                    const alpha = Math.random() * 0.3 + 0.3; // Increased from 0.2-0.5 to 0.3-0.6
+                    const r = Math.floor(Math.random() * 80) + 140; // Brighter purple
+                    const g = Math.floor(Math.random() * 40) + 20;
+                    const b = Math.floor(Math.random() * 80) + 200; // Brighter blue component
+                    this.color = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+                    
+                    // Subtle pulse effect
+                    this.pulseFactor = 1;
+                    this.pulseDirection = Math.random() > 0.5 ? 0.01 : -0.01;
                 }
                 
                 update() {
@@ -1819,14 +1830,21 @@
                     this.x += this.vx;
                     this.y += this.vy;
                     
+                    // Subtle pulsing
+                    this.pulseFactor += this.pulseDirection;
+                    if (this.pulseFactor > 1.1 || this.pulseFactor < 0.9) {
+                        this.pulseDirection *= -1;
+                    }
+                    
                     // Bounce off edges
                     if (this.x < 0 || this.x > canvas.width) this.vx = -this.vx;
                     if (this.y < 0 || this.y > canvas.height) this.vy = -this.vy;
                 }
                 
                 draw() {
+                    // Draw particle with moderate effect
                     ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.arc(this.x, this.y, this.size * this.pulseFactor, 0, Math.PI * 2);
                     ctx.fillStyle = this.color;
                     ctx.fill();
                 }
@@ -1837,8 +1855,10 @@
                 particles.push(new Particle());
             }
             
-            // Draw connections between particles
+            // Draw connections between particles with improved visibility
             function drawConnections() {
+                ctx.lineWidth = 1.0; // Increased from 0.8 to 1.0 for better visibility
+                
                 for (let i = 0; i < particles.length; i++) {
                     for (let j = i + 1; j < particles.length; j++) {
                         const dx = particles[i].x - particles[j].x;
@@ -1846,12 +1866,18 @@
                         const distance = Math.sqrt(dx * dx + dy * dy);
                         
                         if (distance < connectionDistance) {
-                            const opacity = 1 - (distance / connectionDistance);
+                            const opacity = (1 - (distance / connectionDistance)) * 0.45; // Increased from 0.3 to 0.45
+                            
+                            // Parse colors to create matching line color
+                            const colorI = particles[i].color.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([.\d]+)\)/);
+                            const ri = colorI ? colorI[1] : 138;
+                            const gi = colorI ? colorI[2] : 43;
+                            const bi = colorI ? colorI[3] : 226;
+                            
                             ctx.beginPath();
                             ctx.moveTo(particles[i].x, particles[i].y);
                             ctx.lineTo(particles[j].x, particles[j].y);
-                            ctx.strokeStyle = `rgba(138, 43, 226, ${opacity * 0.2})`;
-                            ctx.lineWidth = 1;
+                            ctx.strokeStyle = `rgba(${ri}, ${gi}, ${bi}, ${opacity})`;
                             ctx.stroke();
                         }
                     }
