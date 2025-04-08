@@ -25,6 +25,19 @@
             color: var(--text-primary);
             font-family: 'Inter', sans-serif;
             overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Molecule Animation Canvas */
+        #molecule-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.4;
+            pointer-events: none;
         }
 
         /* Custom scrollbar */
@@ -582,6 +595,9 @@
     </style>
 </head>
 <body>
+    <!-- Molecule Animation Background Canvas -->
+    <canvas id="molecule-background"></canvas>
+
     <!-- Navigation -->
     <nav class="navbar py-4">
         <div class="container mx-auto px-4 md:px-8">
@@ -1767,6 +1783,101 @@
     </footer>
 
     <script>
+        // Molecule Background Animation
+        (function() {
+            const canvas = document.getElementById('molecule-background');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size to window size
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // Particle settings
+            const particleCount = 100;
+            const particles = [];
+            const connectionDistance = 150;
+            const particleSize = 2;
+            
+            // Particle class
+            class Particle {
+                constructor() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.vx = (Math.random() - 0.5) * 0.5;
+                    this.vy = (Math.random() - 0.5) * 0.5;
+                    this.size = Math.random() * particleSize + 1;
+                    this.color = `rgba(138, 43, 226, ${Math.random() * 0.5 + 0.3})`;
+                }
+                
+                update() {
+                    // Move particle
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    
+                    // Bounce off edges
+                    if (this.x < 0 || this.x > canvas.width) this.vx = -this.vx;
+                    if (this.y < 0 || this.y > canvas.height) this.vy = -this.vy;
+                }
+                
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fillStyle = this.color;
+                    ctx.fill();
+                }
+            }
+            
+            // Initialize particles
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle());
+            }
+            
+            // Draw connections between particles
+            function drawConnections() {
+                for (let i = 0; i < particles.length; i++) {
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const dx = particles[i].x - particles[j].x;
+                        const dy = particles[i].y - particles[j].y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < connectionDistance) {
+                            const opacity = 1 - (distance / connectionDistance);
+                            ctx.beginPath();
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.strokeStyle = `rgba(138, 43, 226, ${opacity * 0.2})`;
+                            ctx.lineWidth = 1;
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+            
+            // Animation loop
+            function animate() {
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Update and draw connections
+                drawConnections();
+                
+                // Update and draw particles
+                for (const particle of particles) {
+                    particle.update();
+                    particle.draw();
+                }
+                
+                requestAnimationFrame(animate);
+            }
+            
+            animate();
+        })();
+
         // Initialize 3D scenes when the document is loaded
         document.addEventListener('DOMContentLoaded', function() {
             // Create Three.js scenes
